@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLineEdit, QCompleter, QMessageBox, QDialog, QPushButton, QLabel, QWidget, QGridLayout, QSpacerItem, QSizePolicy, QFormLayout, QFrame, QSystemTrayIcon, QMenu, QGroupBox, QCheckBox, QTimeEdit, QDateTimeEdit, QComboBox, QToolButton, QLayout, QHBoxLayout, QVBoxLayout
-from PyQt5.QtGui import QFont, QIcon, QPixmap, QCursor, QFontDatabase, QPainter, QPen, QGuiApplication
-from PyQt5.QtCore import center, Qt, pyqtSlot, QUrl, QTime, QCoreApplication, QTime, QTimer, QMetaObject, QObject, Qt, QByteArray, QSize
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLineEdit, QCompleter, QMessageBox, QDialog, QPushButton, QLabel, QWidget, QGridLayout, QSpacerItem, QSizePolicy, QFormLayout, QFrame, QSystemTrayIcon, QMenu, QGroupBox, QCheckBox, QTimeEdit, QDateTimeEdit, QComboBox, QToolButton, QLayout, QHBoxLayout, QVBoxLayout, QGraphicsDropShadowEffect
+from PyQt5.QtGui import QFont, QIcon, QPixmap, QCursor, QFontDatabase, QPainter, QPen, QGuiApplication, QPainterPath
+from PyQt5.QtCore import center, Qt, pyqtSlot, QUrl, QTime, QCoreApplication, QTime, QTimer, QMetaObject, QObject, Qt, QByteArray, QSize, QRectF
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from tinydb import TinyDB, Query
@@ -189,14 +189,30 @@ class owghat_info(object):
 if __name__ == '__main__':
     owghat_info()
 
+from PyQt5.QtWidgets import QWidget, QGraphicsDropShadowEffect
+from PyQt5.QtGui import QPainter, QPen
+from PyQt5.QtCore import Qt
+
 class RectangleWidget(QWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setWindowFlags(Qt.FramelessWindowHint)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+
+        shadow = QGraphicsDropShadowEffect(self)
+        shadow.setBlurRadius(15)
+        shadow.setXOffset(0)
+        shadow.setYOffset(0)
+        self.setGraphicsEffect(shadow)
+
     def paintEvent(self, event):
         super().paintEvent(event)
         painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing, True)
         painter.setPen(QPen(Qt.black, 2, Qt.SolidLine))
         rect = self.rect()
         rect.adjust(2, 2, -2, -2)
-        painter.drawRect(rect)
+        painter.drawRoundedRect(rect, 8, 8)
 
 #------------UI------------
 #main
@@ -454,7 +470,7 @@ class Ui_Owghat(object):
         self.AzanZohr.setText(_translate("Owghat", "<html><head/><body><p align=\"right\"><span style=\" font-size:11pt; font-weight:600;\">اذان ظهر </span></p></body></html>"))
         self.AzanMaghrebInfo.setText(_translate("Owghat", "<html><head/><body><p align=\"right\"><span style=\" font-size:11pt; font-weight:600;\">00:00</span></p></body></html>"))
         self.AzanMaghreb.setText(_translate("Owghat", "<html><head/><body><p align=\"right\"><span style=\" font-size:11pt; font-weight:600;\">اذان مغرب </span></p></body></html>"))
-        self.RemainingTime.setText(_translate("Owghat", "<html><head/><body><p align=\"center\"><span style=\" font-size:11pt; font-weight:600;\">خالی</span></p></body></html>"))
+        self.RemainingTime.setText(_translate("Owghat", "<html><head/><body><p align=\"center\"><span style=\" font-size:11pt; font-weight:600;\">در حال محاسبه</span></p></body></html>"))
 
 #setting
 class Ui_Setting(object):
@@ -742,6 +758,7 @@ class myWindow(QMainWindow, Ui_Owghat, owghat_info):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.RTfunction)
         self.timer.start(1000)
+        self.azan_time_remaining = 0
 
     # close
     def closeEvent(self, event):
@@ -1046,6 +1063,10 @@ class myWindow(QMainWindow, Ui_Owghat, owghat_info):
         self.trayIcon.showMessage("یاداوری اذان مغرب", self.TextMSG, QSystemTrayIcon.NoIcon, 15000)
 
     def RTfunction(self):
+        if self.azan_time_remaining > 0:
+            self.azan_time_remaining -= 1
+            return
+
         fontText = QFont()
         fontText.setPointSize(11)
         fontText.setBold(True)
@@ -1078,9 +1099,23 @@ class myWindow(QMainWindow, Ui_Owghat, owghat_info):
         hours, remainder = divmod(remaining_seconds, 3600)
         minutes, seconds = divmod(remainder, 60)
 
-        self.RemainingTime.setText(f"{hours} ساعت و {minutes} دقیقه و {seconds} ثانیه تا اذان {azan_names[next_azan_label]}")
+        if hours == 0 and minutes == 0 and seconds <= 2:
+            self.RemainingTime.setText(f"الان اذان {azan_names[next_azan_label]} است")
+            self.azan_time_remaining = 60
+        else:
+            remaining_time_parts = []
+            if hours > 0:
+                remaining_time_parts.append(f"{hours} ساعت")
+            if minutes > 0 or hours > 0:
+                remaining_time_parts.append(f"{minutes} دقیقه")
+            remaining_time_parts.append(f"{seconds} ثانیه")
+            remaining_time_str = " و ".join(remaining_time_parts)
+
+            self.RemainingTime.setText(f"{remaining_time_str} تا اذان {azan_names[next_azan_label]}")
+
         self.RemainingTime.setFont(fontText)
         self.RemainingTime.setAlignment(Qt.AlignCenter)
+
 
 
 #------------CONNECTION------------
