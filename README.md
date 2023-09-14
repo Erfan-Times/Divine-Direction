@@ -13,6 +13,7 @@
 ## How to Use the Exe version
 comming soon
 
+### Preview
 ![Program preview](Preview/1.png)
 
 ## Persian
