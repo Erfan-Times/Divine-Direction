@@ -1,0 +1,8 @@
+PyQt5
+tinydb
+requests
+pandas
+hijri-converter
+configparser
+os-win
+jdatetime
