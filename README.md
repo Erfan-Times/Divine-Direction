@@ -19,10 +19,10 @@ comming soon
 
 ## نحوه استفاده از نسخه پایتون:
 1. ابتدا این پروژه را با دستور: `git clone https://github.com/Erfan-Times/Divine-Direction` دانلود کنید.
-2. سپس در نوار آدرس File Explorer عبارت 'CMD' را تایپ کنید تا Command Prompt در این پوشه باز شود.
-3. در Command Prompt، دستور را بنویسید: «cd Divine-Direction».
-4. در Command Prompt، بنویسید: «pip install -r requires.txt».
-5. فایل 'Divine Direction.py' را باز کنید
+2. سپس در نوار آدرس File Explorer عبارت `CMD` را تایپ کنید تا Command Prompt در این پوشه باز شود.
+3. در Command Prompt، دستور را بنویسید: `cd Divine-Direction`.
+4. در Command Prompt، بنویسید: `pip install -r requires.txt`.
+5. فایل `Divine Direction.py` را باز کنید
 
 
 ## نحوه استفاده از نسخه Exe
