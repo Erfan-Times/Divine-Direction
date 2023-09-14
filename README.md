@@ -13,6 +13,8 @@
 ## How to Use the Exe version
 comming soon
 
+![Program preview](Preview/1.png)
+
 ## Persian
 یک برنامه گرافیکی منبع باز است که در پایتون با استفاده از کتابخانه PyQt5 نوشته شده است. این برنامه برای تمامی ایرانیان مقیم ایران طراحی شده است.
 
