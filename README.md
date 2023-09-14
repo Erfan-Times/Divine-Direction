@@ -1,4 +1,4 @@
-#English
+###English
 # Divine Direction
 “Divine Direction” is an open-source graphical program written in Python using the PyQt5 library. This program is designed for all Iranians living in Iran.
 
@@ -13,7 +13,7 @@
 ## How to Use the Exe version
 comming soon
 
-#Persian
+###Persian
 # Divine Direction
 یک برنامه گرافیکی منبع باز است که در پایتون با استفاده از کتابخانه PyQt5 نوشته شده است. این برنامه برای تمامی ایرانیان مقیم ایران طراحی شده است.
 
