@@ -20,7 +20,13 @@
 
 
 ## How to Use the Exe version
-comming soon
+1. Enter this [link](https://drive.google.com/file/d/1a1Cl5i-Vw4yDNnjr32gLrqxJhd3y9dqF) and download the zip file.
+2. Then decompress the zip file.
+3. Enter the `Divine Direction v1.0.0` folder.
+4. Open the `Divine Direction v1.0.0.exe` file.
+* For more convenience, you can place the `Divine Direction v1.0.0` folder in a place where you don't need to move it.
+    Then enter that folder and right click on `Divine Direction v1.0.0.exe` and click on the **desktop** option in the **send to** section.
+
 
 ### Preview
 ![Program preview](Preview/1.png)
@@ -37,9 +43,9 @@ comming soon
 
 
 ## نحوه استفاده از نسخه Exe
-1. وارد این [لینک](https://drive.google.com/file/d/1a1Cl5i-Vw4yDNnjr32gLrqxJhd3y9dqF) شوید و فایل زیپ را دانلود کنید
-2. سپس فایل زیپ را از حالت فشرده در بیاورید
-3. وارد پوشه ی `Divine Direction v1.0.0` شوید
-4. فایل `Divine Direction v1.0.0.exe` را باز کنید 
-* میتوانید برای راحتی بیشتر پوشه ی `Divine Direction v1.0.0` را در یک محلی قرار دهید که نیازی به جابه جا کردن ان نباشد
-   سپس وارد ان پوشه شوید و روی `Divine Direction v1.0.0.exe` کلیک راست کنید و در بخش `send to` روی گزینه ی `desktop` کلیک کنید
+1. وارد این [لینک](https://drive.google.com/file/d/1a1Cl5i-Vw4yDNnjr32gLrqxJhd3y9dqF) شوید و فایل زیپ را دانلود کنید.
+2. سپس فایل زیپ را از حالت فشرده در بیاورید.
+3. وارد پوشه ی `Divine Direction v1.0.0` شوید.
+4. فایل `Divine Direction v1.0.0.exe` را باز کنید.
+* میتوانید برای راحتی بیشتر پوشه ی `Divine Direction v1.0.0` را در یک محلی قرار دهید که نیازی به جابه جا کردن ان نباشد.
+   سپس وارد ان پوشه شوید و روی `Divine Direction v1.0.0.exe` کلیک راست کنید و در بخش **send to** روی گزینه ی **desktop** کلیک کنید.
