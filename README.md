@@ -11,6 +11,11 @@
 ## English
 “Divine Direction” is an open-source graphical program written in Python using the PyQt5 library. This program is designed for all Iranians living in Iran.
 
+| Methods of use |
+| ---------------------------- |
+| [How to use the Python version](#how-to-use-the-python-version) |
+| [How to use the exe version (recommended)](#how-to-use-the-exe-version) |
+
 ## How to use the Python version:
 1. First check if Python is installed on your system or not.
 2. Then download this project with `git clone https://github.com/Erfan-Times/Divine-Direction` command.
@@ -33,6 +38,11 @@
 
 ## Persian (فارسی)
 یک برنامه گرافیکی منبع باز است که در پایتون با استفاده از کتابخانه PyQt5 نوشته شده است. این برنامه برای تمامی ایرانیان مقیم ایران طراحی شده است.
+
+| روش های استفاده |
+| ---------------------------- |
+| [نحوه استفاده از نسخه پایتون](#نحوه-استفاده-از-نسخه-پایتون) |
+| [نحوه استفاده از نسخه اجرایی (توصیه می شود)](#نحوه-استفاده-از-نسخه-exe) |
 
 ## نحوه استفاده از نسخه پایتون:
 1. ابتدا برسی کنید که پایتون روی سیستم شما نصب است یا خیر.
