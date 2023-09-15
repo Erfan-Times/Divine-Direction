@@ -1,9 +1,9 @@
 # **Divine Direction**
 
-| Language                    |
-| ----------------------------|
-
-[hello](#Persian (فارسی))
+| Language                     |
+| ---------------------------- |
+| [English description](#english) |
+| [Persian description (توضیحات فارسی)](#persian-فارسی) |
 
 
 
