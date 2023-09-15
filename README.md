@@ -37,4 +37,9 @@ comming soon
 
 
 ## نحوه استفاده از نسخه Exe
-به زودی
+1. وارد این [لینک](https://drive.google.com/file/d/1a1Cl5i-Vw4yDNnjr32gLrqxJhd3y9dqF) شوید و فایل زیپ را دانلود کنید
+2. سپس فایل زیپ را از حالت فشرده در بیاورید
+3. وارد پوشه ی `Divine Direction v1.0.0` شوید
+4. فایل `Divine Direction v1.0.0.exe` را باز کنید 
+* میتوانید برای راحتی بیشتر پوشه ی `Divine Direction v1.0.0` را در یک محلی قرار دهید که نیازی به جابه جا کردن ان نباشد
+   سپس وارد ان پوشه شوید و روی `Divine Direction v1.0.0.exe` کلیک راست کنید و در بخش `send to` روی گزینه ی `desktop` کلیک کنید
