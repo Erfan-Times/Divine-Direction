@@ -19,7 +19,7 @@
 ## How to use the Python version:
 1. First check if Python is installed on your system or not.
 2. Then download this project with `git clone https://github.com/Erfan-Times/Divine-Direction` command.
-    * If you do not have git, you can download the project as a zip file from [this link] and then extract it.
+    * If you do not have git, you can download the project as a zip file from [this link](https://github.com/Erfan-Times/Divine-Direction/releases/tag/v1.0.0) and then extract it.
 3. Type `CMD` in the address bar of File Explorer to open Command Prompt in this folder.
 4. In the Command Prompt, write the command: `cd Divine-Direction`.
 5. Install the required packages with `pip install -r requirements.txt` command.
@@ -49,7 +49,7 @@
 ## نحوه استفاده از نسخه پایتون:
 1. ابتدا بررسی کنید که پایتون روی سیستم شما نصب شده باشد یا نه.
 2. سپس این پروژه را با دستور `git clone https://github.com/Erfan-Times/Divine-Direction` دانلود کنید.
-    * اگر گیت را ندارید، می‌توانید پروژه را به صورت فایل فشرده از [این لینک](http://www.bing.com/translator/?ref=TThis&text=&from=en&to=fa) دانلود کنید و سپس آن را استخراج کنید.
+    * اگر گیت را ندارید، می‌توانید پروژه را به صورت فایل فشرده از [این لینک](https://github.com/Erfan-Times/Divine-Direction/releases/tag/v1.0.0) دانلود کنید و سپس آن را استخراج کنید.
 3. در نوار آدرس File Explorer عبارت `CMD` را تایپ کنید تا Command Prompt در این پوشه باز شود.
 4. در Command Prompt، دستور `cd Divine-Direction` را بنویسید.
 5. بسته‌های مورد نیاز را با دستور `pip install -r requirements.txt` نصب کنید.
