@@ -27,7 +27,7 @@
 
 
 ## How to Use the Exe version
-1. Enter this [link](https://drive.google.com/file/d/1a1Cl5i-Vw4yDNnjr32gLrqxJhd3y9dqF) and download the zip file.
+1. Enter [this link](https://github.com/Erfan-Times/Divine-Direction/releases/tag/v1.0.0exe) and download the zip file.
 2. Then decompress the zip file.
 3. Enter the `Divine Direction v1.0.0` folder.
 4. Open the `Divine Direction v1.0.0.exe` file.
@@ -57,7 +57,7 @@
 
 
 ## نحوه استفاده از نسخه Exe
-1. وارد این [لینک](https://drive.google.com/file/d/1a1Cl5i-Vw4yDNnjr32gLrqxJhd3y9dqF) شوید و فایل زیپ را دانلود کنید.
+1. وارد [این لینک](https://github.com/Erfan-Times/Divine-Direction/releases/tag/v1.0.0exe) شوید و فایل زیپ را دانلود کنید.
 2. سپس فایل زیپ را از حالت فشرده در بیاورید.
 3. وارد پوشه ی `Divine Direction v1.0.0` شوید.
 4. فایل `Divine Direction v1.0.0.exe` را باز کنید.
