@@ -1,8 +1,7 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLineEdit, QCompleter, QMessageBox, QDialog, QPushButton, QLabel, QWidget, QGridLayout, QSpacerItem, QSizePolicy, QFormLayout, QFrame, QSystemTrayIcon, QMenu, QGroupBox, QCheckBox, QTimeEdit, QDateTimeEdit, QComboBox, QToolButton, QLayout, QHBoxLayout, QVBoxLayout, QGraphicsDropShadowEffect
-from PyQt5.QtGui import QFont, QIcon, QPixmap, QCursor, QFontDatabase, QPainter, QPen, QGuiApplication, QPainterPath
-from PyQt5.QtCore import center, Qt, pyqtSlot, QUrl, QTime, QCoreApplication, QTime, QTimer, QMetaObject, QObject, Qt, QByteArray, QSize, QRectF
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLineEdit, QCompleter, QMessageBox, QDialog, QPushButton, QLabel, QWidget, QGridLayout, QSpacerItem, QSizePolicy, QFormLayout, QFrame, QSystemTrayIcon, QMenu, QGroupBox, QCheckBox, QTimeEdit, QDateTimeEdit, QComboBox, QToolButton, QLayout, QHBoxLayout, QVBoxLayout, QGraphicsDropShadowEffect, QListView
+from PyQt5.QtGui import QFont, QIcon, QPixmap, QCursor, QFontDatabase, QPainter, QPen, QGuiApplication
+from PyQt5.QtCore import Qt, pyqtSlot, QUrl, QTime, QCoreApplication, QTime, QTimer, QMetaObject, QObject, Qt, QByteArray, QSize, QProcess
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
-from PyQt5.QtWebEngineWidgets import QWebEngineView
 from tinydb import TinyDB, Query
 from datetime import datetime, timedelta, date
 from configparser import ConfigParser
@@ -13,6 +12,10 @@ import pandas as pd
 import sys
 import winreg
 import jdatetime
+import math
+import re
+import json
+import codecs
 
 #------------path------------
 class os_dir(object):
@@ -31,6 +34,7 @@ class os_dir(object):
     config.read(ini)
     icon = config["Images"]['icon']
     Calendar_path = QByteArray.fromBase64(icon.encode('utf-8'))
+    CityDatabase = os.path.join(Current_dir, 'Data', 'locations.json')
 
 #------------Variable------------
 mediaPlayer = QMediaPlayer()
@@ -58,7 +62,7 @@ def CheckNetwork():
         QMessageBox.critical(None, "خطا", "شما به اینترنت متصل نیستید")
         sys.exit()
 
-if __name__ == '__main__':
+if (DataBase.all()[0]["OfflineMode"] == False):
     Azandb = TinyDB(os_dir.DataBase_path)
     AllAzan = Azandb.all()[0]
     if AllAzan['gregorian']['dategregorianIso'] is None or AllAzan['gregorian']['dategregorianIso'] != date.today().isoformat():
@@ -74,7 +78,7 @@ shamsi_weekdays = ["شنبه", "یک‌شنبه", "دوشنبه", "سه‌شنب
 hijri_weekdays = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"]
 gregorian_weekdays = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 
-#------------API------------
+#------------get Times------------
 class owghat_info(object):
     def __init__(self):
         super(owghat_info, self).__init__()
@@ -89,12 +93,11 @@ class owghat_info(object):
             #apis
             owghat = requests.get(f'http://api.aladhan.com/v1/timingsByCity?city={city}&country=iran&method=7&tune=0,0,0,0,0,0,0,0,-42').json()
             self.hadis = requests.get('https://api.keybit.ir/hadis').json()
-            
-            today_shamsi = jdatetime.date.today()
-            today_hijri = convert.Gregorian.today().to_hijri()
-            today_gregorian = jdatetime.date.today().togregorian()
 
-            # info owghat
+            self.hadis_text_Owghat = self.hadis['result']['text']
+            self.hadis_person_Owghat = self.hadis['result']['person']
+            self.hadis_source_Owghat = self.hadis['result']['source']
+
             self.Azan_Sobh_Owghat = owghat['data']['timings']['Fajr']
             self.Azan_zohr_Owghat = owghat['data']['timings']['Dhuhr']
             self.Azan_Maghreb_Owghat = owghat['data']['timings']['Maghrib']
@@ -102,45 +105,9 @@ class owghat_info(object):
             self.Ghorub_Aftab_Owghat = owghat['data']['timings']['Sunset']
             self.Nimeshab_Owghat = owghat['data']['timings']['Midnight']
 
-            self.date_weekday = today_shamsi.weekday()
-
-            # shamsi
-            self.year_shamsi = today_shamsi.year
-            self.month_shamsi = today_shamsi.month
-            self.day_shamsi = today_shamsi.day
-
-            # hijri
-            self.year_hijri = today_hijri.year
-            self.month_hijri = today_hijri.month
-            self.day_hijri = today_hijri.day
-
-            # gregorian
-            self.year_gregorian = today_gregorian.year
-            self.month_gregorian = today_gregorian.month
-            self.day_gregorian = today_gregorian.day
-
-            self.gregorian_letters = f"{gregorian_weekdays[self.date_weekday]}, {self.day_gregorian} {gregorian_months[self.month_gregorian - 1]}, {self.year_gregorian}"
-            self.gregorian = f"{self.year_gregorian}/{self.month_gregorian}/{self.day_gregorian}"
-
-            self.shamsi_letters = f"{shamsi_weekdays[self.date_weekday]}, {self.day_shamsi} {shamsi_months[self.month_shamsi - 1]}, {self.year_shamsi}"
-            self.shamsi = f"{self.year_shamsi}/{self.month_shamsi}/{self.day_shamsi}"
-
-            self.hijri_letters = f"{hijri_weekdays[self.date_weekday]}, {self.day_hijri} {hijri_months[self.month_hijri - 1]}, {self.year_hijri}"
-            self.hijri = f"{self.year_hijri}/{self.month_hijri}/{self.day_hijri}"
-
-            self.hadis_text_Owghat = self.hadis['result']['text']
-            self.hadis_person_Owghat = self.hadis['result']['person']
-            self.hadis_source_Owghat = self.hadis['result']['source']
-
-            WeekdaySTR = f"image{self.date_weekday + 1}"
-
             self.info = self.AzanDataBase.update({
-                'weekday': self.date_weekday,
-                "shamsi":{'dateshamsi': self.shamsi, "year_shamsi":self.year_shamsi, "month_shamsi":self.month_shamsi, "day_shamsi":self.day_shamsi, "letters": self.shamsi_letters},
-                "hijri":{'datehijri': self.hijri, "year_hijri":self.year_hijri, "month_hijri":self.month_hijri, "day_hijri":self.day_hijri, "letters": self.hijri_letters},
-                "gregorian":{'dategregorianIso': date.today().isoformat(), 'dategregorian': self.gregorian, "year_gregorian":self.year_gregorian, "month_gregorian":self.month_gregorian, "day_gregorian":self.day_gregorian, "letters": self.gregorian_letters},
+                "gregorian":{'dategregorianIso': date.today().isoformat()},
                 'Hadis': {'Hadis_Text': self.hadis_text_Owghat, 'Hadis_Person': self.hadis_person_Owghat, "Hadis_Source": self.hadis_source_Owghat},
-                'iniNumber': WeekdaySTR,
                 'AzanSobh': self.Azan_Sobh_Owghat,
                 'Azanzohr': self.Azan_zohr_Owghat,
                 'AzanMaghreb': self.Azan_Maghreb_Owghat,
@@ -155,17 +122,9 @@ class owghat_info(object):
             self.Tolu_Aftab = self.AllAzandb['ToluAftab']
             self.Ghorub_Aftab = self.AllAzandb['GhorubAftab']
             self.Nimeshab = self.AllAzandb['Nimeshab']
-            self.date_shamsi = self.AllAzandb['shamsi']['dateshamsi']
-            self.shamsi_letters = self.AllAzandb['shamsi']['letters']
-            self.date_ghamari = self.AllAzandb['hijri']['datehijri']
-            self.ghamari_letters = self.AllAzandb['hijri']['letters']
-            self.date_miladi = self.AllAzandb['gregorian']['dategregorian']
-            self.miladi_letters = self.AllAzandb['gregorian']['letters']
             self.hadis_text = self.AllAzandb['Hadis']['Hadis_Text']
             self.hadis_person = self.AllAzandb['Hadis']['Hadis_Person']
             self.hadis_source = self.AllAzandb['Hadis']['Hadis_Source']
-            self.iniNumber = self.AllAzandb['iniNumber']
-
         else:
             self.AzanDataBase = TinyDB(os_dir.DataBase_path)
             self.AllAzandb = self.AzanDataBase.all()[0]
@@ -175,23 +134,361 @@ class owghat_info(object):
             self.Tolu_Aftab = self.AllAzandb['ToluAftab']
             self.Ghorub_Aftab = self.AllAzandb['GhorubAftab']
             self.Nimeshab = self.AllAzandb['Nimeshab']
-            self.date_shamsi = self.AllAzandb['shamsi']['dateshamsi']
-            self.shamsi_letters = self.AllAzandb['shamsi']['letters']
-            self.date_ghamari = self.AllAzandb['hijri']['datehijri']
-            self.ghamari_letters = self.AllAzandb['hijri']['letters']
-            self.date_miladi = self.AllAzandb['gregorian']['dategregorian']
-            self.miladi_letters = self.AllAzandb['gregorian']['letters']
             self.hadis_text = self.AllAzandb['Hadis']['Hadis_Text']
             self.hadis_person = self.AllAzandb['Hadis']['Hadis_Person']
             self.hadis_source = self.AllAzandb['Hadis']['Hadis_Source']
-            self.iniNumber = self.AllAzandb['iniNumber']
-    
-if __name__ == '__main__':
-    owghat_info()
 
-from PyQt5.QtWidgets import QWidget, QGraphicsDropShadowEffect
-from PyQt5.QtGui import QPainter, QPen
-from PyQt5.QtCore import Qt
+class PrayTimes():
+	timeNames = {
+		'imsak'    : 'Imsak',
+		'fajr'     : 'Fajr',
+		'sunrise'  : 'Sunrise',
+		'dhuhr'    : 'Dhuhr',
+		'asr'      : 'Asr',
+		'sunset'   : 'Sunset',
+		'maghrib'  : 'Maghrib',
+		'isha'     : 'Isha',
+		'midnight' : 'Midnight'
+	}
+
+	methods = {
+		'MWL': {
+			'name': 'Muslim World League',
+			'params': { 'fajr': 18, 'isha': 17 } },
+		'ISNA': {
+			'name': 'Islamic Society of North America (ISNA)',
+			'params': { 'fajr': 15, 'isha': 15 } },
+		'Egypt': {
+			'name': 'Egyptian General Authority of Survey',
+			'params': { 'fajr': 19.5, 'isha': 17.5 } },
+		'Makkah': {
+			'name': 'Umm Al-Qura University, Makkah',
+			'params': { 'fajr': 18.5, 'isha': '90 min' } },
+		'Karachi': {
+			'name': 'University of Islamic Sciences, Karachi',
+			'params': { 'fajr': 18, 'isha': 18 } },
+		'Tehran': {
+			'name': 'Institute of Geophysics, University of Tehran',
+			'params': { 'fajr': 17.7, 'isha': 14, 'maghrib': 4.5, 'midnight': 'Jafari' } },
+		'Jafari': {
+			'name': 'Shia Ithna-Ashari, Leva Institute, Qum',
+			'params': { 'fajr': 16, 'isha': 14, 'maghrib': 4, 'midnight': 'Jafari' } }
+	}
+
+	defaultParams = {
+		'maghrib': '0 min', 'midnight': 'Standard'
+	}
+
+	calcMethod = 'MWL'
+	
+	settings = {
+		"imsak"    : '10 min',
+		"dhuhr"    : '0 min',
+		"asr"      : 'Standard',
+		"highLats" : 'NightMiddle'
+	}
+	
+	timeFormat = '24h'
+	timeSuffixes = ['am', 'pm']
+	invalidTime =  '-----'
+
+	numIterations = 1
+	offset = {}
+
+	def __init__(self, method = "MWL") :
+
+		for method, config in self.methods.items():
+			for name, value in self.defaultParams.items():
+				if not name in config['params'] or config['params'][name] is None:
+					config['params'][name] = value
+
+		self.calcMethod = method if method in self.methods else 'MWL'
+		params = self.methods[self.calcMethod]['params']
+		for name, value in params.items():
+			self.settings[name] = value
+
+		for name in self.timeNames:
+			self.offset[name] = 0
+
+	def setMethod(self, method='Tehran'):
+		if method in self.methods:
+			self.adjust(self.methods[method].params)
+			self.calcMethod = method
+
+	def adjust(self, params):
+		self.settings.update(params)
+
+	def tune(self, timeOffsets):
+		self.offset.update(timeOffsets)
+			
+	def getMethod(self):
+		return self.calcMethod
+
+	def getSettings(self):
+		return self.settings
+		
+	def getOffsets(self):
+		return self.offset
+
+	def getDefaults(self):
+		return self.methods
+
+	def getTimes(self, date, coords, timezone, dst = 0, format = None):
+		self.lat = coords[0]
+		self.lng = coords[1]
+		self.elv = coords[2] if len(coords)>2 else 0
+		if format != None:
+			self.timeFormat = format
+		if type(date).__name__ == 'date':
+			date = (date.year, date.month, date.day)
+		self.timeZone = timezone + (1 if dst else 0)
+		self.jDate = self.julian(date[0], date[1], date[2]) - self.lng / (15 * 24.0)
+		return self.computeTimes()
+
+	def getFormattedTime(self, time, format, suffixes = None):
+		if math.isnan(time):
+			return self.invalidTime
+		if format == 'Float':
+			return time
+		if suffixes == None:
+			suffixes = self.timeSuffixes
+
+		time = self.fixhour(time+ 0.5/ 60)
+		hours = math.floor(time)
+		
+		minutes = math.floor((time- hours)* 60)
+		suffix = suffixes[ 0 if hours < 12 else 1 ] if format == '12h' else ''
+		formattedTime = "%02d:%02d" % (hours, minutes) if format == "24h" else "%d:%02d" % ((hours+11)%12+1, minutes)
+		return formattedTime + suffix
+
+	def midDay(self, time):
+		eqt = self.sunPosition(self.jDate + time)[1]
+		return self.fixhour(12 - eqt)
+
+	def sunAngleTime(self, angle, time, direction = None):
+		try:
+			decl = self.sunPosition(self.jDate + time)[0]
+			noon = self.midDay(time)
+			t = 1/15.0* self.arccos((-self.sin(angle)- self.sin(decl)* self.sin(self.lat))/
+					(self.cos(decl)* self.cos(self.lat)))
+			return noon+ (-t if direction == 'ccw' else t)
+		except ValueError:
+			return float('nan')
+
+	def asrTime(self, factor, time): 
+		decl = self.sunPosition(self.jDate + time)[0]
+		angle = -self.arccot(factor + self.tan(abs(self.lat - decl)))
+		return self.sunAngleTime(angle, time)
+
+	def sunPosition(self, jd):
+		D = jd - 2451545.0
+		g = self.fixangle(357.529 + 0.98560028* D)
+		q = self.fixangle(280.459 + 0.98564736* D)
+		L = self.fixangle(q + 1.915* self.sin(g) + 0.020* self.sin(2*g))
+
+		R = 1.00014 - 0.01671*self.cos(g) - 0.00014*self.cos(2*g)
+		e = 23.439 - 0.00000036* D
+
+		RA = self.arctan2(self.cos(e)* self.sin(L), self.cos(L))/ 15.0
+		eqt = q/15.0 - self.fixhour(RA)
+		decl = self.arcsin(self.sin(e)* self.sin(L))
+
+		return (decl, eqt)
+
+	def julian(self, year, month, day):
+		if month <= 2:
+			year -= 1
+			month += 12
+		A = math.floor(year / 100)
+		B = 2 - A + math.floor(A / 4)
+		return math.floor(365.25 * (year + 4716)) + math.floor(30.6001 * (month + 1)) + day + B - 1524.5
+
+	def computePrayerTimes(self, times):
+		times = self.dayPortion(times)
+		params = self.settings
+		
+		imsak   = self.sunAngleTime(self.eval(params['imsak']), times['imsak'], 'ccw')
+		fajr    = self.sunAngleTime(self.eval(params['fajr']), times['fajr'], 'ccw')
+		sunrise = self.sunAngleTime(self.riseSetAngle(self.elv), times['sunrise'], 'ccw')
+		dhuhr   = self.midDay(times['dhuhr'])
+		asr     = self.asrTime(self.asrFactor(params['asr']), times['asr'])
+		sunset  = self.sunAngleTime(self.riseSetAngle(self.elv), times['sunset'])
+		maghrib = self.sunAngleTime(self.eval(params['maghrib']), times['maghrib'])
+		isha    = self.sunAngleTime(self.eval(params['isha']), times['isha']) 
+		return {
+			'imsak': imsak, 'fajr': fajr, 'sunrise': sunrise, 'dhuhr': dhuhr,
+			'asr': asr, 'sunset': sunset, 'maghrib': maghrib, 'isha': isha
+		}
+
+	def computeTimes(self):
+		times = {
+			'imsak': 5, 'fajr': 5, 'sunrise': 6, 'dhuhr': 12,
+			'asr': 13, 'sunset': 18, 'maghrib': 18, 'isha': 18
+		}
+
+		for i in range(self.numIterations):
+			times = self.computePrayerTimes(times)
+		times = self.adjustTimes(times)
+
+		if self.settings['midnight'] == 'Jafari':
+			times['midnight'] = times['sunset'] + self.timeDiff(times['sunset'], times['fajr']) / 2
+		else:
+			times['midnight'] = times['sunset'] + self.timeDiff(times['sunset'], times['sunrise']) / 2
+
+		times = self.tuneTimes(times)
+		return self.modifyFormats(times)
+		
+
+	def adjustTimes(self, times):
+		params = self.settings
+		tzAdjust = self.timeZone - self.lng / 15.0
+		for t,v in times.items():
+			times[t] += tzAdjust
+
+		if params['highLats'] != 'None':
+			times = self.adjustHighLats(times)
+
+		if self.isMin(params['imsak']):
+			times['imsak'] = times['fajr'] - self.eval(params['imsak']) / 60.0
+
+		if self.isMin(params['maghrib']):
+			times['maghrib'] = times['sunset'] - self.eval(params['maghrib']) / 60.0
+
+		if self.isMin(params['isha']):
+			times['isha'] = times['maghrib'] - self.eval(params['isha']) / 60.0
+		times['dhuhr'] += self.eval(params['dhuhr']) / 60.0
+
+		return times
+
+	def asrFactor(self, asrParam):
+		methods = {'Standard': 1, 'Hanafi': 2}
+		return methods[asrParam] if asrParam in methods else self.eval(asrParam)
+
+	def riseSetAngle(self, elevation = 0):
+		elevation = 0 if elevation == None else elevation
+		return 0.833 + 0.0347 * math.sqrt(elevation)
+
+	def tuneTimes(self, times):
+		for name, value in times.items():
+			times[name] += self.offset[name] / 60.0
+		return times
+
+	def modifyFormats(self, times):
+		for name, value in times.items():
+			times[name] = self.getFormattedTime(times[name], self.timeFormat)
+		return times
+
+	def adjustHighLats(self, times):
+		params = self.settings
+		nightTime = self.timeDiff(times['sunset'], times['sunrise'])
+		times['imsak'] = self.adjustHLTime(times['imsak'], times['sunrise'], self.eval(params['imsak']), nightTime, 'ccw')
+		times['fajr']  = self.adjustHLTime(times['fajr'], times['sunrise'], self.eval(params['fajr']), nightTime, 'ccw')
+		times['isha']  = self.adjustHLTime(times['isha'], times['sunset'], self.eval(params['isha']), nightTime)
+		times['maghrib'] = self.adjustHLTime(times['maghrib'], times['sunset'], self.eval(params['maghrib']), nightTime)
+		return times
+
+	def adjustHLTime(self, time, base, angle, night, direction = None):
+		portion = self.nightPortion(angle, night)
+		diff = self.timeDiff(time, base) if direction == 'ccw' else self.timeDiff(base, time)
+		if math.isnan(time) or diff > portion:
+			time = base + (-portion if direction == 'ccw' else portion)
+		return time
+
+	def nightPortion(self, angle, night):
+		method = self.settings['highLats']
+		portion = 1/2.0
+		if method == 'AngleBased':
+			portion = 1/60.0 * angle
+		if method == 'OneSeventh':
+			portion = 1/7.0
+		return portion * night
+
+	def dayPortion(self, times):
+		for i in times:
+			times[i] /= 24.0
+		return times
+
+	def timeDiff(self, time1, time2):
+		return self.fixhour(time2- time1)
+
+	def eval(self, st):
+		val = re.split('[^0-9.+-]', str(st), 1)[0]
+		return float(val) if val else 0
+
+	def isMin(self, arg):
+		return isinstance(arg, str) and arg.find('min') > -1
+
+	def sin(self, d): return math.sin(math.radians(d))
+	def cos(self, d): return math.cos(math.radians(d))
+	def tan(self, d): return math.tan(math.radians(d))
+
+	def arcsin(self, x): return math.degrees(math.asin(x))
+	def arccos(self, x): return math.degrees(math.acos(x))
+	def arctan(self, x): return math.degrees(math.atan(x))
+
+	def arccot(self, x): return math.degrees(math.atan(1.0/x))
+	def arctan2(self, y, x): return math.degrees(math.atan2(y, x))
+
+	def fixangle(self, angle): return self.fix(angle, 360.0)
+	def fixhour(self, hour): return self.fix(hour, 24.0)
+
+	def fix(self, a, mode):
+		if math.isnan(a):
+			return a
+		a = a - mode * (math.floor(a / mode))
+		return a + mode if a < 0 else a
+
+def getdate():
+    today_shamsi = jdatetime.date.today()
+    today_hijri = convert.Gregorian.today().to_hijri()
+    today_gregorian = jdatetime.date.today().togregorian()
+    # info owghat
+    date_weekday = today_shamsi.weekday()
+    # shamsi
+    year_shamsi = today_shamsi.year
+    month_shamsi = today_shamsi.month
+    day_shamsi = today_shamsi.day
+    # hijri
+    year_hijri = today_hijri.year
+    month_hijri = today_hijri.month
+    day_hijri = today_hijri.day
+    # gregorian
+    year_gregorian = today_gregorian.year
+    month_gregorian = today_gregorian.month
+    day_gregorian = today_gregorian.day
+    gregorian_letters = f"{gregorian_weekdays[date_weekday]}, {day_gregorian} {gregorian_months[month_gregorian - 1]}, {year_gregorian}"
+    gregorian = f"{year_gregorian}/{month_gregorian}/{day_gregorian}"
+    shamsi_letters = f"{shamsi_weekdays[date_weekday]}, {day_shamsi} {shamsi_months[month_shamsi - 1]}, {year_shamsi}"
+    shamsi = f"{year_shamsi}/{month_shamsi}/{day_shamsi}"
+    hijri_letters = f"{hijri_weekdays[date_weekday]}, {day_hijri} {hijri_months[month_hijri - 1]}, {year_hijri}"
+    hijri = f"{year_hijri}/{month_hijri}/{day_hijri}"
+    WeekdaySTR = f"image{date_weekday + 1}"
+
+    date = json.dumps({"gregorian_letters": gregorian_letters, "gregorian": gregorian, "shamsi_letters":shamsi_letters, "shamsi":shamsi, "hijri_letters":hijri_letters, "hijri":hijri, "iniNumber":WeekdaySTR})
+
+    fainaldate = json.loads(date)
+    return fainaldate
+
+def getcoords():
+    ospath = os_dir()
+    with codecs.open(ospath.CityDatabase, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    a = DataBase.all()[0]["region"]
+    results = [item for item in data['Locations'] if int(item['id']) >= 31 and (item['State'] == a or item['City'] == a)]
+    b = json.dumps(results, ensure_ascii=False)
+    return b # --> [{"id": "1116", "State": "همدان", "City": "تویسرکان", "latitude": "34.549041748046875", "Longitude": "48.448116302490234"}]
+
+def getprayertime():
+    prayTimes = PrayTimes()
+    coords = json.loads(getcoords())
+    prayTimes.tune({"fajr": -8, "sunrise": 8, "maghrib": 2, "sunset": -8, "midnight": -8})
+    times = prayTimes.getTimes(date.today(), (float(coords[0]["latitude"]), float(coords[0]["Longitude"])), 3.5) #first lat then lng
+    owghatTimes = json.dumps(times) # --> {"imsak": "04:38", "fajr": "04:40", "sunrise": "06:03", "dhuhr": "12:10", "asr": "15:39", "sunset": "18:16", "maghrib": "18:34", "isha": "19:22", "midnight": "23:28"}
+    fainalowghatTimes = json.loads(owghatTimes)
+    return fainalowghatTimes
+
+if DataBase.all()[0]["OfflineMode"] == False:
+    owghat_info()
 
 class RectangleWidget(QWidget):
     def __init__(self, *args, **kwargs):
@@ -220,9 +517,18 @@ class Ui_Owghat(object):
     def setupUi(self, Owghat):
         path = os_dir()
         Owghat.setObjectName("Owghat")
-        Owghat.resize(530, 600)
-        Owghat.setMinimumSize(530, 560)
-        Owghat.setMaximumSize(600, 690)
+        h = 550
+        h1 = 600
+        w = 500
+        w1 = 530
+        if (DataBase.all()[0]["OfflineMode"] == True):
+            Owghat.resize(w, h)
+            Owghat.setMinimumSize(w, h - 40)
+            Owghat.setMaximumSize(w + 15, h + 60)
+        else:
+            Owghat.resize(w1, h1)
+            Owghat.setMinimumSize(w1, h1 - 40)
+            Owghat.setMaximumSize(w1 + 60, h1 + 90)
         qr = self.frameGeometry()
         cp = QGuiApplication.primaryScreen().availableGeometry().center()
         qr.moveCenter(cp)
@@ -287,10 +593,8 @@ class Ui_Owghat(object):
         self.ShamsiInfo.setObjectName("ShamsiInfo")
         self.gridLayout_3.addWidget(self.ShamsiInfo, 0, 0, 1, 2)
         config.read(os_dir.ini)
-        owghatInfo = owghat_info()
-        AzanDataBase = TinyDB(os_dir.DataBase_path)
-        self.AllSettingAzan = AzanDataBase.all()[0]
-        self.iniNumber = self.AllSettingAzan['iniNumber']
+        self.getdate = getdate()
+        self.iniNumber = self.getdate['iniNumber']
         self.weekday = config["Images"][self.iniNumber]
         self.gridLayout.addLayout(self.gridLayout_3, 0, 2, 1, 1)
         self.Zekr = QLabel(self.centralwidget)
@@ -434,6 +738,11 @@ class Ui_Owghat(object):
 
         self.retranslateUi(Owghat)
         QMetaObject.connectSlotsByName(Owghat)
+        if DataBase.all()[0]["OfflineMode"] == True:
+            for i in range(self.hadisLayout.count()):
+                self.hadisLayout.itemAt(i).widget().hide()
+            self.HorizontalLine3.hide()
+            spacerItem5.changeSize(0, 0)
 
     def retranslateUi(self, Owghat):
         _translate = QCoreApplication.translate
@@ -635,13 +944,13 @@ class Ui_Setting(object):
         Form.setWindowTitle(_translate("Form", "تنظیمات"))
         self.Save.setToolTip(_translate("Form", "<html><head/><body><p>ذخیره کردن تنظیمات</p></body></html>"))
         self.Save.setText(_translate("Form", "ذخیره"))
-        self.groupBox.setTitle(_translate("Form", "انتخاب منطقه"))
+        self.groupBox.setTitle(_translate("Form", "انتخاب شهر یا استان"))
         self.label.setText(_translate("Form", "<html><head/><body><p align=\"right\"><span style=\" font-size:9pt; font-weight:600;\">لطفا شهری که در ان زندگی می کنید را وارد کنید</span></p></body></html>"))
-        self.lineEdit.setToolTip(_translate("Form", "انتخاب شهر یا روستا"))
+        self.lineEdit.setToolTip(_translate("Form", "انتخاب شهر یا استان"))
         self.StartOnWindowsBTN.setToolTip(_translate("Form", "<html><head/><body><p>اجرا شدن در هنگام بالا امدن ویندوز</p></body></html>"))
         self.StartOnWindowsBTN.setText(_translate("Form", "اجرا شدن در هنگام بالا امدن ویندوز"))
-        self.offlineMode.setToolTip(_translate("Form", "<html><head/><body><p>توجه بعضی قابلیت ها محدود می&zwnj;شود</p></body></html>"))
-        self.offlineMode.setText(_translate("Form", "رفتن به حالت افلاین"))
+        self.offlineMode.setToolTip(_translate("Form", "<html><head/><body><p>توجه این قابلیت دقیق نیست</p></body></html>"))
+        self.offlineMode.setText(_translate("Form", "حالت افلاین"))
         self.Azan.setTitle(_translate("Form", "اذان گو"))
         self.OpnFolder.setToolTip(_translate("Form", "<html><head/><body><p>باز کردن پوشه&zwnj;ی اذان</p></body></html>"))
         self.OpnFolder.setText(_translate("Form", "..."))
@@ -793,59 +1102,119 @@ class myWindow(QMainWindow, Ui_Owghat, owghat_info):
         self.hadisFont.setPointSize(9)
         self.hadisFont.setBold(True)
 
+        if DataBase.all()[0]["OfflineMode"] == False:
     #------------WIDGETS------------
-        # AzanSobhInfo
-        self.AzanSobhInfo.setText(self.owghat.Azan_Sobh)
-        self.AzanSobhInfo.setFont(fontText)
-        # AzanZohr
-        self.AzanZohrInfo.setText(self.owghat.Azan_zohr)
-        self.AzanZohrInfo.setFont(fontText)
-        # AzanMaghreb
-        self.AzanMaghrebInfo.setText(self.owghat.Azan_Maghreb)
-        self.AzanMaghrebInfo.setFont(fontText)
-        # Tolu
-        self.ToluInfo.setText(self.owghat.Tolu_Aftab)
-        self.ToluInfo.setFont(fontText)
-        # Ghorub
-        self.GhorubInfo.setText(self.owghat.Ghorub_Aftab)
-        self.GhorubInfo.setFont(fontText)
-        # NimeShab
-        self.NimeShabInfo.setText(self.owghat.Nimeshab)
-        self.NimeShabInfo.setFont(fontText)
-        # shamsi Date
-        self.ShamsiInfo.setText(self.owghat.date_shamsi)
-        self.ShamsiInfo.setFont(fontDate)
-        self.ShamsiInfo.setAlignment(Qt.AlignmentFlag.AlignRight)
-        # ghamari Date
-        self.GhamariInfo.setText(self.owghat.date_ghamari)
-        self.GhamariInfo.setFont(fontDate)
-        self.GhamariInfo.setAlignment(Qt.AlignRight)
-        # Miladi Date
-        self.MiladiInfo.setText(self.owghat.date_miladi)
-        self.MiladiInfo.setFont(fontDate)
-        self.MiladiInfo.setAlignment(Qt.AlignRight)
-        # Hadis
-        self.HadisLabel.setLayoutDirection(Qt.RightToLeft)
-        self.HadisLabel.setWordWrap(True)
-        self.HadisLabel.setFixedWidth(400)
-        self.HadisLabel.setText(self.owghat.hadis_text)
-        self.HadisLabel.setFont(self.hadisFont)
-        # person Hadis
-        self.personLabel.setText(self.owghat.hadis_person)
-        self.personLabel.setFont(hadisInfoFont)
-        # source Hadis
-        self.sourceLabel.setText(self.owghat.hadis_source)
-        self.sourceLabel.setFont(hadisInfoFont)
-        #city
-        self.city.setText(cityLabel)
-        self.city.setFont(cityFont)
-        #Date Letters
-        self.ShamsiLettersInfo.setText(self.owghat.shamsi_letters)
-        self.ShamsiLettersInfo.setFont(fontDate)
-        self.GhamariLettersInfo.setText(self.owghat.ghamari_letters)
-        self.GhamariLettersInfo.setFont(fontDate)
-        self.MiladiLettersInfo.setText(self.owghat.miladi_letters)
-        self.MiladiLettersInfo.setFont(fontDate)
+            alldate = getdate() # --> {"gregorian_letters": gregorian_letters, "gregorian": gregorian, "shamsi_letters":shamsi_letters, "shamsi":shamsi, "hijri_letters":hijri_letters, "hijri":hijri, "iniNumber":WeekdaySTR}
+            # AzanSobhInfo
+            self.AzanSobhInfo.setText(self.owghat.Azan_Sobh)
+            self.AzanSobhInfo.setFont(fontText)
+            # AzanZohr
+            self.AzanZohrInfo.setText(self.owghat.Azan_zohr)
+            self.AzanZohrInfo.setFont(fontText)
+            # AzanMaghreb
+            self.AzanMaghrebInfo.setText(self.owghat.Azan_Maghreb)
+            self.AzanMaghrebInfo.setFont(fontText)
+            # Tolu
+            self.ToluInfo.setText(self.owghat.Tolu_Aftab)
+            self.ToluInfo.setFont(fontText)
+            # Ghorub
+            self.GhorubInfo.setText(self.owghat.Ghorub_Aftab)
+            self.GhorubInfo.setFont(fontText)
+            # NimeShab
+            self.NimeShabInfo.setText(self.owghat.Nimeshab)
+            self.NimeShabInfo.setFont(fontText)
+            # shamsi Date
+            self.ShamsiInfo.setText(alldate["shamsi"])
+            self.ShamsiInfo.setFont(fontDate)
+            self.ShamsiInfo.setAlignment(Qt.AlignmentFlag.AlignRight)
+            # ghamari Date
+            self.GhamariInfo.setText(alldate["hijri"])
+            self.GhamariInfo.setFont(fontDate)
+            self.GhamariInfo.setAlignment(Qt.AlignRight)
+            # Miladi Date
+            self.MiladiInfo.setText(alldate["gregorian"])
+            self.MiladiInfo.setFont(fontDate)
+            self.MiladiInfo.setAlignment(Qt.AlignRight)
+            # Hadis
+            self.HadisLabel.setLayoutDirection(Qt.RightToLeft)
+            self.HadisLabel.setWordWrap(True)
+            self.HadisLabel.setFixedWidth(400)
+            self.HadisLabel.setText(self.owghat.hadis_text)
+            self.HadisLabel.setFont(self.hadisFont)
+            # person Hadis
+            self.personLabel.setText(self.owghat.hadis_person)
+            self.personLabel.setFont(hadisInfoFont)
+            # source Hadis
+            self.sourceLabel.setText(self.owghat.hadis_source)
+            self.sourceLabel.setFont(hadisInfoFont)
+            #city
+            self.city.setText(cityLabel)
+            self.city.setFont(cityFont)
+            #Date Letters
+            self.ShamsiLettersInfo.setText(alldate["shamsi_letters"])
+            self.ShamsiLettersInfo.setFont(fontDate)
+            self.GhamariLettersInfo.setText(alldate["hijri_letters"])
+            self.GhamariLettersInfo.setFont(fontDate)
+            self.MiladiLettersInfo.setText(alldate["gregorian_letters"])
+            self.MiladiLettersInfo.setFont(fontDate)
+            
+        elif (DataBase.all()[0]["OfflineMode"] == True):
+    #------------WIDGETS------------
+            prayertime = getprayertime() # --> {"imsak": "04:38", "fajr": "04:40", "sunrise": "06:03", "dhuhr": "12:10", "asr": "15:39", "sunset": "18:16", "maghrib": "18:34", "isha": "19:22", "midnight": "23:28"}
+            alldate = getdate() # --> {"gregorian_letters": gregorian_letters, "gregorian": gregorian, "shamsi_letters":shamsi_letters, "shamsi":shamsi, "hijri_letters":hijri_letters, "hijri":hijri, "iniNumber":WeekdaySTR}
+            # AzanSobhInfo
+            self.AzanSobhInfo.setText(prayertime["fajr"])
+            self.AzanSobhInfo.setFont(fontText)
+            # AzanZohr
+            self.AzanZohrInfo.setText(prayertime["dhuhr"])
+            self.AzanZohrInfo.setFont(fontText)
+            # AzanMaghreb
+            self.AzanMaghrebInfo.setText(prayertime["maghrib"])
+            self.AzanMaghrebInfo.setFont(fontText)
+            # Tolu
+            self.ToluInfo.setText(prayertime["sunrise"])
+            self.ToluInfo.setFont(fontText)
+            # Ghorub
+            self.GhorubInfo.setText(prayertime["sunset"])
+            self.GhorubInfo.setFont(fontText)
+            # NimeShab
+            self.NimeShabInfo.setText(prayertime["midnight"])
+            self.NimeShabInfo.setFont(fontText)
+            # shamsi Date
+            self.ShamsiInfo.setText(alldate["shamsi"])
+            self.ShamsiInfo.setFont(fontDate)
+            self.ShamsiInfo.setAlignment(Qt.AlignmentFlag.AlignRight)
+            # ghamari Date
+            self.GhamariInfo.setText(alldate["hijri"])
+            self.GhamariInfo.setFont(fontDate)
+            self.GhamariInfo.setAlignment(Qt.AlignRight)
+            # Miladi Date
+            self.MiladiInfo.setText(alldate["gregorian"])
+            self.MiladiInfo.setFont(fontDate)
+            self.MiladiInfo.setAlignment(Qt.AlignRight)
+            # Hadis
+            self.HadisLabel.setLayoutDirection(Qt.RightToLeft)
+            self.HadisLabel.setWordWrap(True)
+            self.HadisLabel.setFixedWidth(400)
+            self.HadisLabel.setText("")
+            self.HadisLabel.setFont(self.hadisFont)
+            # person Hadis
+            self.personLabel.setText("")
+            self.personLabel.setFont(hadisInfoFont)
+            # source Hadis
+            self.sourceLabel.setText("")
+            self.sourceLabel.setFont(hadisInfoFont)
+            #city
+            self.city.setText(cityLabel)
+            self.city.setFont(cityFont)
+            #Date Letters
+            self.ShamsiLettersInfo.setText(alldate["shamsi_letters"])
+            self.ShamsiLettersInfo.setFont(fontDate)
+            self.GhamariLettersInfo.setText(alldate["hijri_letters"])
+            self.GhamariLettersInfo.setFont(fontDate)
+            self.MiladiLettersInfo.setText(alldate["gregorian_letters"])
+            self.MiladiLettersInfo.setFont(fontDate)
+        
         #About Me
         self.AboutMe.clicked.connect(self.AboutMe_clicked)
         # setting
@@ -856,54 +1225,24 @@ class myWindow(QMainWindow, Ui_Owghat, owghat_info):
         self.Azandb = TinyDB(os_dir.DataBase_path)
         self.AllAzan = self.Azandb.all()[0]
         self.AzanDataBase = TinyDB(os_dir.DataBase_path)
-        self.DataBase = TinyDB(os_dir.DataBaseOS)
-        AllSetting = self.DataBase.all()[0]
+        AllSetting = DataBase.all()[0]
         city = AllSetting['region']
         self.AllAzandb = self.AzanDataBase.all()[0]
         #apis
-        owghat = requests.get(f'http://api.aladhan.com/v1/timingsByCity?city={city}&country=iran&method=7').json()
+        owghat = requests.get(f'http://api.aladhan.com/v1/timingsByCity?city={city}&country=iran&method=7&tune=0,0,0,0,0,0,0,0,-42').json()
         self.hadis = requests.get('https://api.keybit.ir/hadis').json()
-        
-        today_shamsi = jdatetime.date.today()
-        today_hijri = convert.Gregorian.today().to_hijri()
-        today_gregorian = jdatetime.date.today().togregorian()
-        # info owghat
+        self.hadis_text_Owghat = self.hadis['result']['text']
+        self.hadis_person_Owghat = self.hadis['result']['person']
+        self.hadis_source_Owghat = self.hadis['result']['source']
         self.Azan_Sobh_Owghat = owghat['data']['timings']['Fajr']
         self.Azan_zohr_Owghat = owghat['data']['timings']['Dhuhr']
         self.Azan_Maghreb_Owghat = owghat['data']['timings']['Maghrib']
         self.Tolu_Aftab_Owghat = owghat['data']['timings']['Sunrise']
         self.Ghorub_Aftab_Owghat = owghat['data']['timings']['Sunset']
         self.Nimeshab_Owghat = owghat['data']['timings']['Midnight']
-        self.date_weekday = today_shamsi.weekday()
-        # shamsi
-        self.year_shamsi = today_shamsi.year
-        self.month_shamsi = today_shamsi.month
-        self.day_shamsi = today_shamsi.day
-        # hijri
-        self.year_hijri = today_hijri.year
-        self.month_hijri = today_hijri.month
-        self.day_hijri = today_hijri.day
-        # gregorian
-        self.year_gregorian = today_gregorian.year
-        self.month_gregorian = today_gregorian.month
-        self.day_gregorian = today_gregorian.day
-        self.gregorian_letters = f"{gregorian_weekdays[self.date_weekday]}, {self.day_gregorian} {gregorian_months[self.month_gregorian - 1]}, {self.year_gregorian}"
-        self.gregorian = f"{self.year_gregorian}/{self.month_gregorian}/{self.day_gregorian}"
-        self.shamsi_letters = f"{shamsi_weekdays[self.date_weekday]}, {self.day_shamsi} {shamsi_months[self.month_shamsi - 1]}, {self.year_shamsi}"
-        self.shamsi = f"{self.year_shamsi}/{self.month_shamsi}/{self.day_shamsi}"
-        self.hijri_letters = f"{hijri_weekdays[self.date_weekday]}, {self.day_hijri} {hijri_months[self.month_hijri - 1]}, {self.year_hijri}"
-        self.hijri = f"{self.year_hijri}/{self.month_hijri}/{self.day_hijri}"
-        self.hadis_text_Owghat = self.hadis['result']['text']
-        self.hadis_person_Owghat = self.hadis['result']['person']
-        self.hadis_source_Owghat = self.hadis['result']['source']
-        WeekdaySTR = f"image{self.date_weekday + 1}"
         self.info = self.AzanDataBase.update({
-            'weekday': self.date_weekday,
-            "shamsi":{'dateshamsi': self.shamsi, "year_shamsi":self.year_shamsi, "month_shamsi":self.month_shamsi, "day_shamsi":self.day_shamsi, "letters": self.shamsi_letters},
-            "hijri":{'datehijri': self.hijri, "year_hijri":self.year_hijri, "month_hijri":self.month_hijri, "day_hijri":self.day_hijri, "letters": self.hijri_letters},
-            "gregorian":{'dategregorianIso': date.today().isoformat(), 'dategregorian': self.gregorian, "year_gregorian":self.year_gregorian, "month_gregorian":self.month_gregorian, "day_gregorian":self.day_gregorian, "letters": self.gregorian_letters},
+            "gregorian":{'dategregorianIso': date.today().isoformat()},
             'Hadis': {'Hadis_Text': self.hadis_text_Owghat, 'Hadis_Person': self.hadis_person_Owghat, "Hadis_Source": self.hadis_source_Owghat},
-            'iniNumber': WeekdaySTR,
             'AzanSobh': self.Azan_Sobh_Owghat,
             'Azanzohr': self.Azan_zohr_Owghat,
             'AzanMaghreb': self.Azan_Maghreb_Owghat,
@@ -912,24 +1251,17 @@ class myWindow(QMainWindow, Ui_Owghat, owghat_info):
             'Nimeshab': self.Nimeshab_Owghat
         }, doc_ids=[1])
 
-        self.AzanDataBase2 = TinyDB(os_dir.DataBase_path)
-        self.AllAzandb2 = self.AzanDataBase2.all()[0]
-        self.Azan_Sobh = self.AllAzandb2['AzanSobh']
-        self.Azan_zohr = self.AllAzandb2['Azanzohr']
-        self.Azan_Maghreb = self.AllAzandb2['AzanMaghreb']
-        self.Tolu_Aftab = self.AllAzandb2['ToluAftab']
-        self.Ghorub_Aftab = self.AllAzandb2['GhorubAftab']
-        self.Nimeshab = self.AllAzandb2['Nimeshab']
-        self.date_shamsi = self.AllAzandb2['shamsi']['dateshamsi']
-        self.shamsi_letters = self.AllAzandb2['shamsi']['letters']
-        self.date_ghamari = self.AllAzandb2['hijri']['datehijri']
-        self.ghamari_letters = self.AllAzandb2['hijri']['letters']
-        self.date_miladi = self.AllAzandb2['gregorian']['dategregorian']
-        self.miladi_letters = self.AllAzandb2['gregorian']['letters']
-        self.hadis_text = self.AllAzandb2['Hadis']['Hadis_Text']
-        self.hadis_person = self.AllAzandb2['Hadis']['Hadis_Person']
-        self.hadis_source = self.AllAzandb2['Hadis']['Hadis_Source']
-        self.iniNumber = self.AllAzandb2['iniNumber']
+        self.AzanDataBase = TinyDB(os_dir.DataBase_path)
+        self.AllAzandb = self.AzanDataBase.all()[0]
+        self.Azan_Sobh = self.AllAzandb['AzanSobh']
+        self.Azan_zohr = self.AllAzandb['Azanzohr']
+        self.Azan_Maghreb = self.AllAzandb['AzanMaghreb']
+        self.Tolu_Aftab = self.AllAzandb['ToluAftab']
+        self.Ghorub_Aftab = self.AllAzandb['GhorubAftab']
+        self.Nimeshab = self.AllAzandb['Nimeshab']
+        self.hadis_text = self.AllAzandb['Hadis']['Hadis_Text']
+        self.hadis_person = self.AllAzandb['Hadis']['Hadis_Person']
+        self.hadis_source = self.AllAzandb['Hadis']['Hadis_Source']
 
     # REFRESH WIDGETS
     def refresh(self):
@@ -959,59 +1291,124 @@ class myWindow(QMainWindow, Ui_Owghat, owghat_info):
         self.hadisFont.setPointSize(9)
         self.hadisFont.setBold(True)
 
+        if DataBase.all()[0]["OfflineMode"] == False:
     #------------WIDGETS------------
-        # AzanSobhInfo
-        self.AzanSobhInfo.setText(self.Azan_Sobh)
-        self.AzanSobhInfo.setFont(fontText)
-        # AzanZohr
-        self.AzanZohrInfo.setText(self.Azan_zohr)
-        self.AzanZohrInfo.setFont(fontText)
-        # AzanMaghreb
-        self.AzanMaghrebInfo.setText(self.Azan_Maghreb)
-        self.AzanMaghrebInfo.setFont(fontText)
-        # Tolu
-        self.ToluInfo.setText(self.Tolu_Aftab)
-        self.ToluInfo.setFont(fontText)
-        # Ghorub
-        self.GhorubInfo.setText(self.Ghorub_Aftab)
-        self.GhorubInfo.setFont(fontText)
-        # NimeShab
-        self.NimeShabInfo.setText(self.Nimeshab)
-        self.NimeShabInfo.setFont(fontText)
-        # shamsi Date
-        self.ShamsiInfo.setText(self.date_shamsi)
-        self.ShamsiInfo.setFont(fontDate)
-        self.ShamsiInfo.setAlignment(Qt.AlignCenter)
-        # ghamari Date
-        self.GhamariInfo.setText(self.date_ghamari)
-        self.GhamariInfo.setFont(fontDate)
-        self.GhamariInfo.setAlignment(Qt.AlignRight)
-        # Miladi Date
-        self.MiladiInfo.setText(self.date_miladi)
-        self.MiladiInfo.setFont(fontDate)
-        self.MiladiInfo.setAlignment(Qt.AlignRight)
-        # Hadis
-        self.HadisLabel.setLayoutDirection(Qt.RightToLeft)
-        self.HadisLabel.setWordWrap(True)
-        self.HadisLabel.setFixedWidth(400)
-        self.HadisLabel.setText(self.hadis_text)
-        self.HadisLabel.setFont(self.hadisFont)
-        # person Hadis
-        self.personLabel.setText(self.hadis_person)
-        self.personLabel.setFont(hadisInfoFont)
-        # source Hadis
-        self.sourceLabel.setText(self.hadis_source)
-        self.sourceLabel.setFont(hadisInfoFont)
-        #city
-        self.city.setText(cityLabel)
-        self.city.setFont(cityFont)
-        #Date Letters
-        self.ShamsiLettersInfo.setText(self.shamsi_letters)
-        self.ShamsiLettersInfo.setFont(fontDate)
-        self.GhamariLettersInfo.setText(self.ghamari_letters)
-        self.GhamariLettersInfo.setFont(fontDate)
-        self.MiladiLettersInfo.setText(self.miladi_letters)
-        self.MiladiLettersInfo.setFont(fontDate)
+            alldate = getdate() # --> {"gregorian_letters": gregorian_letters, "gregorian": gregorian, "shamsi_letters":shamsi_letters, "shamsi":shamsi, "hijri_letters":hijri_letters, "hijri":hijri, "iniNumber":WeekdaySTR}
+            # AzanSobhInfo
+            self.AzanSobhInfo.setText(self.Azan_Sobh)
+            self.AzanSobhInfo.setFont(fontText)
+            # AzanZohr
+            self.AzanZohrInfo.setText(self.Azan_zohr)
+            self.AzanZohrInfo.setFont(fontText)
+            # AzanMaghreb
+            self.AzanMaghrebInfo.setText(self.Azan_Maghreb)
+            self.AzanMaghrebInfo.setFont(fontText)
+            # Tolu
+            self.ToluInfo.setText(self.Tolu_Aftab)
+            self.ToluInfo.setFont(fontText)
+            # Ghorub
+            self.GhorubInfo.setText(self.Ghorub_Aftab)
+            self.GhorubInfo.setFont(fontText)
+            # NimeShab
+            self.NimeShabInfo.setText(self.Nimeshab)
+            self.NimeShabInfo.setFont(fontText)
+            # shamsi Date
+            self.ShamsiInfo.setText(alldate["shamsi"])
+            self.ShamsiInfo.setFont(fontDate)
+            self.ShamsiInfo.setAlignment(Qt.AlignmentFlag.AlignRight)
+            # ghamari Date
+            self.GhamariInfo.setText(alldate["hijri"])
+            self.GhamariInfo.setFont(fontDate)
+            self.GhamariInfo.setAlignment(Qt.AlignRight)
+            # Miladi Date
+            self.MiladiInfo.setText(alldate["gregorian"])
+            self.MiladiInfo.setFont(fontDate)
+            self.MiladiInfo.setAlignment(Qt.AlignRight)
+            # Hadis
+            self.HadisLabel.setLayoutDirection(Qt.RightToLeft)
+            self.HadisLabel.setWordWrap(True)
+            self.HadisLabel.setFixedWidth(400)
+            self.HadisLabel.setText(self.hadis_text)
+            self.HadisLabel.setFont(self.hadisFont)
+            # person Hadis
+            self.personLabel.setText(self.hadis_person)
+            self.personLabel.setFont(hadisInfoFont)
+            # source Hadis
+            self.sourceLabel.setText(self.hadis_source)
+            self.sourceLabel.setFont(hadisInfoFont)
+            #city
+            self.city.setText(cityLabel)
+            self.city.setFont(cityFont)
+            #Date Letters
+            self.ShamsiLettersInfo.setText(alldate["shamsi_letters"])
+            self.ShamsiLettersInfo.setFont(fontDate)
+            self.GhamariLettersInfo.setText(alldate["hijri_letters"])
+            self.GhamariLettersInfo.setFont(fontDate)
+            self.MiladiLettersInfo.setText(alldate["gregorian_letters"])
+            self.MiladiLettersInfo.setFont(fontDate)
+            
+        elif (DataBase.all()[0]["OfflineMode"] == True):
+    #------------WIDGETS------------
+            prayertime = getprayertime() # --> {"imsak": "04:38", "fajr": "04:40", "sunrise": "06:03", "dhuhr": "12:10", "asr": "15:39", "sunset": "18:16", "maghrib": "18:34", "isha": "19:22", "midnight": "23:28"}
+            alldate = getdate() # --> {"gregorian_letters": gregorian_letters, "gregorian": gregorian, "shamsi_letters":shamsi_letters, "shamsi":shamsi, "hijri_letters":hijri_letters, "hijri":hijri, "iniNumber":WeekdaySTR}
+            # AzanSobhInfo
+            self.AzanSobhInfo.setText(prayertime["fajr"])
+            self.AzanSobhInfo.setFont(fontText)
+            # AzanZohr
+            self.AzanZohrInfo.setText(prayertime["dhuhr"])
+            self.AzanZohrInfo.setFont(fontText)
+            # AzanMaghreb
+            self.AzanMaghrebInfo.setText(prayertime["maghrib"])
+            self.AzanMaghrebInfo.setFont(fontText)
+            # Tolu
+            self.ToluInfo.setText(prayertime["sunrise"])
+            self.ToluInfo.setFont(fontText)
+            # Ghorub
+            self.GhorubInfo.setText(prayertime["sunset"])
+            self.GhorubInfo.setFont(fontText)
+            # NimeShab
+            self.NimeShabInfo.setText(prayertime["midnight"])
+            self.NimeShabInfo.setFont(fontText)
+            # shamsi Date
+            self.ShamsiInfo.setText(alldate["shamsi"])
+            self.ShamsiInfo.setFont(fontDate)
+            self.ShamsiInfo.setAlignment(Qt.AlignmentFlag.AlignRight)
+            # ghamari Date
+            self.GhamariInfo.setText(alldate["hijri"])
+            self.GhamariInfo.setFont(fontDate)
+            self.GhamariInfo.setAlignment(Qt.AlignRight)
+            # Miladi Date
+            self.MiladiInfo.setText(alldate["gregorian"])
+            self.MiladiInfo.setFont(fontDate)
+            self.MiladiInfo.setAlignment(Qt.AlignRight)
+            # Hadis
+            self.HadisLabel.setLayoutDirection(Qt.RightToLeft)
+            self.HadisLabel.setWordWrap(True)
+            self.HadisLabel.setFixedWidth(400)
+            self.HadisLabel.setText("")
+            self.HadisLabel.setFont(self.hadisFont)
+            # person Hadis
+            self.personLabel.setText("")
+            self.personLabel.setFont(hadisInfoFont)
+            # source Hadis
+            self.sourceLabel.setText("")
+            self.sourceLabel.setFont(hadisInfoFont)
+            #city
+            self.city.setText(cityLabel)
+            self.city.setFont(cityFont)
+            #Date Letters
+            self.ShamsiLettersInfo.setText(alldate["shamsi_letters"])
+            self.ShamsiLettersInfo.setFont(fontDate)
+            self.GhamariLettersInfo.setText(alldate["hijri_letters"])
+            self.GhamariLettersInfo.setFont(fontDate)
+            self.MiladiLettersInfo.setText(alldate["gregorian_letters"])
+            self.MiladiLettersInfo.setFont(fontDate)
+        
+        #About Me
+        self.AboutMe.clicked.connect(self.AboutMe_clicked)
+        # setting
+        self.setting.clicked.connect(self.setting_clicked)
+
 
 #------------Run os Windows------------
     def startup(self):
@@ -1116,8 +1513,6 @@ class myWindow(QMainWindow, Ui_Owghat, owghat_info):
         self.RemainingTime.setFont(fontText)
         self.RemainingTime.setAlignment(Qt.AlignCenter)
 
-
-
 #------------CONNECTION------------
     @pyqtSlot()
     def AboutMe_clicked(self):
@@ -1195,17 +1590,21 @@ class SettingDialog(QDialog, Ui_Setting):
 
     def compeleter(self):
         self.cities = []
-
-        for file in ["bakhsh.csv", "dehestan.csv", "ostan.csv", "shahr.csv", "shahrestan.csv"]:
-            file_path = os.path.join(self.dir_path.data_path, file)
-            df = pd.read_csv(file_path)
-            for city in df["name"].tolist():
-                if not city[-1].isdigit():
-                    self.cities.append(city)
+        with codecs.open(self.dir_path.CityDatabase, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        for item in data['Locations']:
+            if int(item['id']) >= 31:
+                self.cities.append(item['City'])
         self.cities = list(set(self.cities))
-
         completer = QCompleter(self.cities)
+        fontText = QFont()
+        fontText.setPointSize(9)
+        fontText.setBold(True)
+        popup = QListView()
+        popup.setFont(fontText)
+        completer.setPopup(popup)
         self.lineEdit.setCompleter(completer)
+
 
     def State(self):
         settings = DataBase.all()[0]
@@ -1231,10 +1630,10 @@ class SettingDialog(QDialog, Ui_Setting):
         # LineEdit
         self.lineEdit.setText(settings["region"])
 
-        if settings["OfflineMode"] == True and settings["restart"] == False:
-            self.Save.setText("ذخیره (نیازمند به بازنشانی)")
+        if settings["OfflineMode"] == True and settings["restart"] == True:
+            self.offlineMode.setChecked(True)
         elif settings["OfflineMode"] == False:
-            self.Save.setText("ذخیره")
+            self.offlineMode.setChecked(False)
 
     def UI_dialog(self):
         #Connection
@@ -1244,16 +1643,15 @@ class SettingDialog(QDialog, Ui_Setting):
         self.Save.clicked.connect(self.Save_Clicked)
         self.PlayReminderAzan.stateChanged.connect(self.Reminder_stateChanged)
         self.offlineMode.stateChanged.connect(self.offlineMode_stateChanged)
-        self.offlineMode.stateChanged.connect(self.Save_Text)
         self.Cancel.clicked.connect(self.Cancel_clicked)
         self.lineEdit.textChanged.connect(self.on_text_changed)
-        self.offlineMode.hide()        
+        if (DataBase.all()[0]["OfflineMode"] == True):
+            self.lineEdit.textChanged.connect(self.offlineMode_stateChanged)
+        # self.offlineMode.hide()        
 
     def on_text_changed(self):
         global lineEditChanged__Variable
         lineEditChanged__Variable = True
-        self.offlineMode.setChecked(False)
-        self.offlineMode.setEnabled(False)
 
     def PlayAzan_Clicked(self):
         if self.PlayAzan.text() == 'پخش اذان':
@@ -1263,6 +1661,7 @@ class SettingDialog(QDialog, Ui_Setting):
                 file_path = os.path.join(self.dir_path.combobox, selected_file + ext)
                 if os.path.exists(file_path):
                     mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(file_path)))
+                    AzanPlayer.stop()
                     mediaPlayer.play()
                     break
         else:
@@ -1327,28 +1726,17 @@ class SettingDialog(QDialog, Ui_Setting):
             SettingDialogClose = None
 
         settings = DataBase.all()[0]
-        if settings["OfflineMode"] == True and settings["restart"] == False and SettingDialogClose == True:
-            QApplication.quit()
-            DataBase.update({"restart": True})
-            os.execl(sys.executable, sys.executable, *sys.argv)
+        if self.Save.text() == "ذخیره (نیازمند به بازنشانی)":
+            if settings["OfflineMode"] == True and settings["restart"] == False and SettingDialogClose == True:
+                DataBase.update({"restart": True})
+            QCoreApplication.quit()
+            QProcess.startDetached(sys.executable, sys.argv)
+
         elif SettingDialogClose == True:
             self.accept()
 
-    def offlineMode_stateChanged(self, state):
-        if state == Qt.Checked:
-            self.lineEdit.setEnabled(False)
-            self.label.setEnabled(False)
-            self.groupBox.setEnabled(False)
-        else:
-            self.lineEdit.setEnabled(True)
-            self.label.setEnabled(True)
-            self.groupBox.setEnabled(True)
-
-    def Save_Text(self, state):
-        if state == Qt.Checked:
-            self.Save.setText("ذخیره (نیازمند به بازنشانی)")
-        else:
-            self.Save.setText("ذخیره")
+    def offlineMode_stateChanged(self):
+        self.Save.setText("ذخیره (نیازمند به بازنشانی)")
 
     def Reminder_stateChanged(self, state):
         if state == Qt.Checked:
